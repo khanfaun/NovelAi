@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trình Đọc Truyện</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Readex Pro', sans-serif;
+        background-color: var(--theme-bg-base);
+        color: var(--theme-text-primary);
+      }
+      :root {
+        /* Theme Colors */
+        --theme-bg-base: #0f172a;
+        --theme-bg-surface: #1e293b;
+        --theme-text-primary: #cbd5e1;
+        --theme-text-secondary: #94a3b8;
+        --theme-accent-primary: #2dd4bf;
+        --theme-accent-secondary: #facc15;
+        --theme-border: #334155;
+
+        /* Reader-specific settings, can be overridden by user */
+        --reader-bg: var(--theme-bg-surface);
+        --reader-text: var(--theme-text-primary);
+        --reader-title: var(--theme-text-primary);
+        --reader-highlight: var(--theme-accent-primary);
+        --reader-font-size: 18px;
+        --reader-font-family: 'Readex Pro', sans-serif;
+      }
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-fade-in-up {
+        animation: fadeInUp 0.2s ease-out forwards;
+      }
+      @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+      }
+      .animate-fade-in {
+          animation: fadeIn 0.3s ease-in-out forwards;
+      }
+
+      /* Reading History */
+      .reading-history { margin-top: 2rem; }
+      .reading-history__title { font-size: 1.5rem; font-weight: bold; color: var(--theme-text-primary); margin-bottom: 1.5rem; border-bottom: 2px solid var(--theme-border); padding-bottom: 0.5rem; }
+      .reading-history ul { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+      .reading-history__item-button { display: flex; align-items: center; width: 100%; text-align: left; background-color: var(--theme-bg-surface); border: 1px solid var(--theme-border); border-radius: 0.5rem; padding: 1rem; transition: all 0.2s ease-in-out; }
+      .reading-history__item-button:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); border-color: var(--theme-accent-primary); }
+      .reading-history__item-icon { color: var(--theme-accent-primary); width: 2rem; height: 2rem; margin-right: 1rem; flex-shrink: 0; }
+      .reading-history__item-info { overflow: hidden; }
+      .reading-history__item-title { font-weight: 600; color: var(--theme-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .reading-history__item-author, .reading-history__item-chapter { font-size: 0.875rem; color: var(--theme-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .reading-history__item-chapter { color: var(--theme-accent-primary); opacity: 0.9; }
+
+      /* Sync Modal */
+      .sync-modal-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.7); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+      .sync-modal { background-color: var(--theme-bg-surface); border-radius: 0.75rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 100%; max-width: 450px; border: 1px solid var(--theme-border); display: flex; flex-direction: column; max-height: 90vh; }
+      .sync-modal__header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--theme-border); }
+      .sync-modal__title { font-size: 1.25rem; font-weight: 600; color: var(--theme-text-primary); }
+      .sync-modal__close-btn { background: none; border: none; color: var(--theme-text-secondary); cursor: pointer; padding: 0.25rem; border-radius: 99px; }
+      .sync-modal__close-btn:hover { color: var(--theme-text-primary); background-color: var(--theme-border); }
+      .sync-modal__close-icon { width: 1.5rem; height: 1.5rem; }
+      .sync-modal__description { padding: 1.5rem; font-size: 0.9rem; color: var(--theme-text-secondary); line-height: 1.6; }
+      .sync-modal-form { padding: 0 1.5rem 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+      .sync-modal-form__label { display: block; font-size: 0.875rem; font-weight: 500; color: var(--theme-text-secondary); margin-bottom: 0.5rem; }
+      .sync-modal-form__input { width: 100%; background-color: var(--theme-bg-base); border: 1px solid var(--theme-border); color: var(--theme-text-primary); border-radius: 0.375rem; padding: 0.75rem 1rem; font-size: 1rem; transition: border-color 0.2s; }
+      .sync-modal-form__input:focus { outline: none; border-color: var(--theme-accent-primary); box-shadow: 0 0 0 2px var(--theme-accent-primary-); }
+      .sync-modal-form__input:disabled { opacity: 0.6; }
+      .sync-modal-form__actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
+      .sync-modal-form__button { border: none; border-radius: 0.375rem; padding: 0.6rem 1.25rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; }
+      .sync-modal-form__button:disabled { opacity: 0.5; cursor: not-allowed; }
+      .sync-modal-form__button--primary { background-color: var(--theme-accent-primary); color: white; }
+      .sync-modal-form__button--primary:not(:disabled):hover { filter: brightness(0.9); }
+      .sync-modal-form__button--secondary { background-color: #475569; color: var(--theme-text-primary); }
+      .sync-modal-form__button--secondary:not(:disabled):hover { background-color: #64748b; }
+      .sync-modal-form__spinner { width: 1.25rem; height: 1.25rem; animation: spin 1s linear infinite; }
+      .sync-modal__status { padding: 1rem 1.5rem; font-size: 0.875rem; text-align: center; color: var(--theme-text-secondary); min-height: 2.5rem; }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.1.1",
+    "react-dom": "https://esm.sh/react-dom@^19.1.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
+    "react/": "https://esm.sh/react@^19.1.1/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.15.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-900">
+    <div id="root"></div>
+    <div id="popover-root"></div>
+    <script type="module" src="/src/index.tsx"></script>
+
+  </body>
+</html>

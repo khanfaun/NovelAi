@@ -1,0 +1,5 @@
+{
+  "name": "Copy of Trình Đọc Truyện",
+  "description": "Một ứng dụng web để tìm kiếm và đọc truyện từ TruyenFull.Vision. Người dùng có thể tìm kiếm truyện theo tên, xem thông tin chi tiết và danh sách chương. Nội dung của mỗi chương chỉ được tải khi người dùng chọn đọc.",
+  "requestFramePermissions": []
+}
